@@ -22,9 +22,9 @@ struct Vector3
 		return Vector3{ x + other.x, y + other.y, z + other.z };
 	}
 
-	constexpr const Vector3& operator/(const float factor) const noexcept
+	constexpr const Vector3 operator / (const float other) const noexcept
 	{
-		return Vector3{ x / factor, y / factor, z / factor };
+		return Vector3(x / other, y / other, z / other);
 	}
 
 	constexpr const Vector3& operator*(const float factor) const noexcept

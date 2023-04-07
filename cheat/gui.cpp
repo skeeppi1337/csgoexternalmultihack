@@ -270,17 +270,16 @@ void gui::Render() noexcept
 		ImGui::SliderFloat("Cham Brightness", &globals::chamBrightness, 0.f, 30.f);
 	}
 
-	ImGui::Checkbox("Aimbot", &globals::aimbot);
+	ImGui::Checkbox("Aimbot MOUSE1", &globals::aimbot);
 	if (globals::aimbot)
 	{
+		ImGui::SliderFloat("Aimbot FOV", &globals::aimbotFov, 1.f, 30.f);
 		ImGui::SliderFloat("Aimbot smooth", &globals::aimbotSmooth, 0.f, 100.f);
-		ImGui::SliderFloat("Aimbot FOV", &globals::aimbotFov, 0.f, 30.f);
-		
 
 		const char* items[] = { "feet" ,"shoulder", "legs", "pelvis", "stomach" , "lowerchest", "upperchest", "neck" , "head"};
 		
 
-		if (ImGui::BeginCombo("##combo", globals::currentItem)) // The second parameter is the label previewed before opening the combo.
+		if (ImGui::BeginCombo("Hitbox", globals::currentItem)) // The second parameter is the label previewed before opening the combo.
 		{
 			for (int n = 0; n < IM_ARRAYSIZE(items); n++)
 			{
@@ -297,11 +296,18 @@ void gui::Render() noexcept
 		}
 	}
 
-	ImGui::Checkbox("Triggerbot (default key is middlemouse)", &globals::triggerBot);
+	ImGui::Checkbox("Triggerbot MOUSE3", &globals::triggerBot);
 
 	if (globals::triggerBot)
 	{
 		ImGui::SliderInt("Triggerbot delay ms:", &globals::triggerBotDelay, 0, 400);
+		ImGui::Checkbox("Magnet", &globals::triggerBotMagnet);
+		if (globals::triggerBotMagnet)
+		{
+			ImGui::SliderFloat("Magnet Fov", &globals::triggerBotMagnetFov, 0.f , 30.f);
+			ImGui::SliderFloat("Magnet Smooth", &globals::triggerBotMagnetSmooth, 0.f, 100.f);
+		}
+		
 	}
 	ImGui::Checkbox("Radar", &globals::radar);
 	ImGui::Checkbox("Bunnyhop", &globals::bunnyHop);

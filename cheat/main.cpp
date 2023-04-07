@@ -25,9 +25,6 @@ int __stdcall wWinMain(
 	globals::clientAddress = mem.GetModuleAddress("client.dll");
 	globals::engineAddress = mem.GetModuleAddress("engine.dll");
 
-	std::cout << "client address: " << mem.GetModuleAddress("client.dll") << std::endl;
-	std::cout << "engine address: " << mem.GetModuleAddress("engine.dll") << std::endl;
-
 	std::thread(hacks::cheatThread, mem).detach(); //heräte cheateille
 
 	while (gui::isRunning)

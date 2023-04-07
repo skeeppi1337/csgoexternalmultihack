@@ -171,7 +171,7 @@ namespace offsets
 constexpr Vector3 CalculateAngle(
 	const Vector3& localPosition,
 	const Vector3& enemyPosition,
-	const Vector3& viewAngles) noexcept
+	const Vector3& viewAngles)
 {
 	return ((enemyPosition - localPosition).ToAngle() - viewAngles);
 }
@@ -192,13 +192,13 @@ void hacks::cheatThread(const Memory& mem) noexcept //kun heräte
 
 		struct Color
 		{
-		std::uint8_t r{}, g{}, b{};
+			std::uint8_t r{}, g{}, b{};
 		};
 
-		const auto& localPlayer = mem.Read<std::uintptr_t>(globals::clientAddress + offsets::dwLocalPlayer);
-		const auto& localTeam = mem.Read<std::int32_t>(localPlayer + offsets::m_iTeamNum);
-		const auto& glowManager = mem.Read<std::uintptr_t>(globals::clientAddress + offsets::dwGlowObjectManager);
-		const auto& localHealth = mem.Read<std::int32_t>(localPlayer + offsets::m_iHealth);
+		const auto localPlayer = mem.Read<std::uintptr_t>(globals::clientAddress + offsets::dwLocalPlayer);
+		const auto localTeam = mem.Read<std::int32_t>(localPlayer + offsets::m_iTeamNum);
+		const auto glowManager = mem.Read<std::uintptr_t>(globals::clientAddress + offsets::dwGlowObjectManager);
+		const auto localHealth = mem.Read<std::int32_t>(localPlayer + offsets::m_iHealth);
 
 
 		if (globals::glow || globals::radar) //glow ja radar
@@ -243,93 +243,96 @@ void hacks::cheatThread(const Memory& mem) noexcept //kun heräte
 					mem.Write(entity + offsets::m_bSpotted, true);
 			}
 		}
-		
+
 		if (globals::aimbot)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-		// aimbot key
-		if (!GetAsyncKeyState(VK_MBUTTON))
-			continue;
-
-		// get local player
-		const auto localPlayer = memory.Read<std::uintptr_t>(client + offsets::dwLocalPlayer);
-		const auto localTeam = memory.Read<std::int32_t>(localPlayer + offsets::m_iTeamNum);
-
-		// eye position = origin + viewOffset
-		const auto localEyePosition = memory.Read<Vector3>(localPlayer + offsets::m_vecOrigin) +
-			memory.Read<Vector3>(localPlayer + offsets::m_vecViewOffset);
-
-		const auto clientState = memory.Read<std::uintptr_t>(engine + offsets::dwClientState);
-
-		const auto localPlayerId =
-			memory.Read<std::int32_t>(clientState + offsets::dwClientState_GetLocalPlayer);
-
-		const auto viewAngles = memory.Read<Vector3>(clientState + offsets::dwClientState_ViewAngles);
-		const auto aimPunch = memory.Read<Vector3>(localPlayer + offsets::m_aimPunchAngle) * 2;
-
-		// aimbot fov
-		auto bestFov = 5.f;
-		auto bestAngle = Vector3{ };
-
-		for (auto i = 1; i <= 32; ++i)
-		{
-			const auto player = memory.Read<std::uintptr_t>(client + offsets::dwEntityList + i * 0x10);
-
-			if (memory.Read<std::int32_t>(player + offsets::m_iTeamNum) == localTeam)
+			// aimbot key
+			if (!GetAsyncKeyState(VK_LBUTTON))
 				continue;
 
-			if (memory.Read<bool>(player + offsets::m_bDormant))
-				continue;
+			// eye position = origin + viewOffset
+			const auto localEyePosition = memory.Read<Vector3>(localPlayer + offsets::m_vecOrigin) +
+				memory.Read<Vector3>(localPlayer + offsets::m_vecViewOffset);
 
-			if (memory.Read<std::int32_t>(player + offsets::m_lifeState))
-				continue;
+			const auto clientState = memory.Read<std::uintptr_t>(engine + offsets::dwClientState);
 
-			if (memory.Read<std::int32_t>(player + offsets::m_bSpottedByMask) & (1 << localPlayerId))
+			/*const auto& localPlayerId =
+				memory.Read<std::int32_t>(clientState + offsets::dwClientState_GetLocalPlayer);*/
+
+			const auto viewAngles = memory.Read<Vector3>(clientState + offsets::dwClientState_ViewAngles);
+			const auto aimPunch = memory.Read<Vector3>(localPlayer + offsets::m_aimPunchAngle) * 2;
+
+			// aimbot fov
+			auto bestFov = globals::aimbotFov;
+			auto bestAngle = Vector3{ 1, 1, 0 };
+			auto newAngle = Vector3{ };
+			auto smoothAngle = Vector3{ };
+
+			for (auto i = 1; i <= 32; ++i)
 			{
+				const auto player = memory.Read<std::uintptr_t>(client + offsets::dwEntityList + i * 0x10);
+				const auto playerTeam = memory.Read<std::int32_t>(player + offsets::m_iTeamNum);
+				const auto isDormant = memory.Read<bool>(player + offsets::m_bDormant);
+				const auto playerHealt = memory.Read<std::int32_t>(player + offsets::m_iHealth);
+				const auto spottedByMask = memory.Read<bool>(player + offsets::m_bSpottedByMask);
+
+				if (playerTeam == localTeam)
+					continue;
+
+				if (isDormant)
+					continue;
+
+				if (!playerHealt) //voi olla
+					continue;
+
+				if (!spottedByMask /*&& (1 << localPlayerId)*/)
+					continue;
+
 				const auto boneMatrix = memory.Read<std::uintptr_t>(player + offsets::m_dwBoneMatrix);
 
 				// pos of player head in 3d space
 				// 8 is the head bone index :)
-				// 1:feet 2:Rshoulder 3:pelvis 4:stomach 5:lowerchest 6:upperchest 7:neck 8:head
-				const auto playerHeadPosition = Vector3{
-					memory.Read<float>(boneMatrix + 0x30 * 7 + 0x0C),
-					memory.Read<float>(boneMatrix + 0x30 * 7 + 0x1C),
-					memory.Read<float>(boneMatrix + 0x30 * 7 + 0x2C) //was 8
+				const Vector3 playerHeadPosition = Vector3{
+					memory.Read<float>(boneMatrix + 0x30 * 8 + 0x0C),
+					memory.Read<float>(boneMatrix + 0x30 * 8 + 0x1C),
+					memory.Read<float>(boneMatrix + 0x30 * 8 + 0x2C)
 				};
 
-				const auto angle = CalculateAngle(
+				auto calcAngle = CalculateAngle(
 					localEyePosition,
 					playerHeadPosition,
-					viewAngles + aimPunch
+					viewAngles 
 				);
 
-				const auto fov = std::hypot(angle.x, angle.y);
+				auto fov = std::hypot(calcAngle.x, calcAngle.y);
 
-				if (fov < bestFov)
+				if (fov < globals::aimbotFov)
 				{
+					float smooth = globals::aimbotSmooth + 1.f;
 					bestFov = fov;
-					bestAngle = angle;
+					bestAngle = calcAngle;
+					newAngle = (viewAngles + bestAngle / smooth); // toimii ilman smooth
+					memory.Write<Vector3>(clientState + offsets::dwClientState_ViewAngles, newAngle); // smoothing
 				}
 			}
 		}
 
-		// if we have a best angle, do aimbot
-		if (!bestAngle.IsZero())
-			memory.Write<Vector3>(clientState + offsets::dwClientState_ViewAngles, viewAngles + bestAngle / globals::aimbotSmooth); // smoothing
-	}
+			// if we have a best angle, do aimbot
+			
 
 		if (globals::bunnyHop)//bhop
 		{
-			const auto& localPlayer = mem.Read<std::uintptr_t>(globals::clientAddress + offsets::dwLocalPlayer);
+			//const auto& localPlayer = mem.Read<std::uintptr_t>(globals::clientAddress + offsets::dwLocalPlayer);
 
 			if (localPlayer)
 			{
 				const auto onGround = mem.Read<bool>(localPlayer + offsets::m_fFlags);
-					if (GetAsyncKeyState(VK_SPACE) && onGround & (1 << 0))
-					{
-						mem.Write<BYTE>(globals::clientAddress + offsets::dwForceJump, 6);
-					}
+				if (GetAsyncKeyState(VK_SPACE) && onGround & (1 << 0))
+				{
+					mem.Write<BYTE>(globals::clientAddress + offsets::dwForceJump, 6);
+				}
 			}
 		}
 
@@ -337,6 +340,76 @@ void hacks::cheatThread(const Memory& mem) noexcept //kun heräte
 		{
 			if (!GetAsyncKeyState(VK_MBUTTON))
 				continue;
+
+			if (globals::triggerBotMagnet)
+			{
+				// eye position = origin + viewOffset
+				const auto localEyePosition = memory.Read<Vector3>(localPlayer + offsets::m_vecOrigin) +
+					memory.Read<Vector3>(localPlayer + offsets::m_vecViewOffset);
+
+				const auto clientState = memory.Read<std::uintptr_t>(engine + offsets::dwClientState);
+
+				/*const auto& localPlayerId =
+					memory.Read<std::int32_t>(clientState + offsets::dwClientState_GetLocalPlayer);*/
+
+				const auto viewAngles = memory.Read<Vector3>(clientState + offsets::dwClientState_ViewAngles);
+				const auto aimPunch = memory.Read<Vector3>(localPlayer + offsets::m_aimPunchAngle) * 2;
+
+				// aimbot fov
+				auto bestFovTrigger = globals::triggerBotMagnetFov;
+				auto bestAngleTrigger = Vector3{ 1, 1, 0 };
+				auto newAngleTrigger = Vector3{ };
+				auto smoothAngleTrigger = Vector3{ };
+
+				for (auto i = 1; i <= 32; ++i)
+				{
+					const auto player = memory.Read<std::uintptr_t>(client + offsets::dwEntityList + i * 0x10);
+					const auto playerTeam = memory.Read<std::int32_t>(player + offsets::m_iTeamNum);
+					const auto isDormant = memory.Read<bool>(player + offsets::m_bDormant);
+					const auto playerHealt = memory.Read<std::int32_t>(player + offsets::m_iHealth);
+					const auto spottedByMask = memory.Read<bool>(player + offsets::m_bSpottedByMask);
+
+					if (playerTeam == localTeam)
+						continue;
+
+					if (isDormant)
+						continue;
+
+					if (!playerHealt) //voi olla
+						continue;
+
+					if (!spottedByMask /*&& (1 << localPlayerId)*/)
+						continue;
+
+					const auto boneMatrix = memory.Read<std::uintptr_t>(player + offsets::m_dwBoneMatrix);
+
+					// pos of player head in 3d space
+					// 8 is the head bone index :)
+					const Vector3 playerHeadPosition = Vector3{
+						memory.Read<float>(boneMatrix + 0x30 * 8 + 0x0C),
+						memory.Read<float>(boneMatrix + 0x30 * 8 + 0x1C),
+						memory.Read<float>(boneMatrix + 0x30 * 8 + 0x2C)
+					};
+
+					auto calcAngle = CalculateAngle(
+						localEyePosition,
+						playerHeadPosition,
+						viewAngles
+					);
+
+					auto fov = std::hypot(calcAngle.x, calcAngle.y);
+
+					if (fov < globals::triggerBotMagnetFov)
+					{
+						float smoothTrigger;
+						bestFovTrigger = fov;
+						bestAngleTrigger = calcAngle;
+						smoothTrigger = globals::triggerBotMagnetSmooth + 1.f;
+						newAngleTrigger = (viewAngles + bestAngleTrigger / smoothTrigger); // toimii ilman smooth
+						memory.Write<Vector3>(clientState + offsets::dwClientState_ViewAngles, newAngleTrigger); // smoothing
+					}
+				}
+			}
 
 			Sleep(globals::triggerBotDelay);
 
@@ -356,57 +429,57 @@ void hacks::cheatThread(const Memory& mem) noexcept //kun heräte
 			if (mem.Read<std::int32_t>(entity + offsets::m_iTeamNum) != mem.Read<std::int32_t>(localPlayer + offsets::m_iTeamNum))
 
 				mem.Write<std::uintptr_t>(globals::clientAddress + offsets::dwForceAttack, 6);
-				std::this_thread::sleep_for(std::chrono::milliseconds(20));
-				mem.Write<std::uintptr_t>(globals::clientAddress + offsets::dwForceAttack, 4);
+			std::this_thread::sleep_for(std::chrono::milliseconds(20));
+			mem.Write<std::uintptr_t>(globals::clientAddress + offsets::dwForceAttack, 4);
 		}
 
 		if (globals::chams)
 		{
 
 
-				if (!localPlayer) //local not found
+			if (!localPlayer) //local not found
+				continue;
+
+			if (!localTeam) //team not found
+				continue;
+
+			for (auto i = 0; i < 64; ++i)
+			{
+				const auto& entity = mem.Read<std::uintptr_t>(globals::clientAddress + offsets::dwEntityList + i * 0x10);
+				const auto& entityTeam = mem.Read<std::int32_t>(entity + offsets::m_iTeamNum);
+
+				if (entity == localPlayer) //skip local player
 					continue;
 
-				if (!localTeam) //team not found
-					continue;
-			
-				for (auto i = 0; i < 64; ++i)
+				//Basically you only need to take your float value, clamp between 0.0 and 1.0, multiply it by 255 and cast to integer.
+
+				//change float to int
+
+				unsigned char enemyRed = (globals::chamColorEnemy[0] * 255);
+				unsigned char enemyGreen = (globals::chamColorEnemy[1] * 255);
+				unsigned char enemyBlue = (globals::chamColorEnemy[2] * 255);
+				auto enemyColor = Color{ enemyRed,  enemyGreen , enemyBlue };
+
+				unsigned char friendlyRed = (globals::chamColorFriendly[0] * 255);
+				unsigned char friendlyGreen = (globals::chamColorFriendly[1] * 255);
+				unsigned char friendlyBlue = (globals::chamColorFriendly[2] * 255);
+				auto teamColor = Color{ friendlyRed,  friendlyGreen , friendlyBlue };
+
+				//&globals::chamColorEnemy[int(0)] , &globals::chamColorEnemy[1] , &globals::chamColorEnemy[2]};
+				//brightness
+				const auto _this = static_cast<std::uintptr_t>(globals::engineAddress + offsets::model_ambient_min - 0x2c); //cant change single player brightness
+				mem.Write<std::int32_t>(globals::engineAddress + offsets::model_ambient_min, *reinterpret_cast<std::uintptr_t*>(&globals::chamBrightness) ^ _this);
+
+				if (entityTeam != localTeam) //enemy chams
 				{
-					const auto& entity = mem.Read<std::uintptr_t>(globals::clientAddress + offsets::dwEntityList + i * 0x10);
-					const auto& entityTeam = mem.Read<std::int32_t>(entity + offsets::m_iTeamNum);
+					mem.Write<>(entity + offsets::m_clrRender, enemyColor);
+				}
+				else //friendly chams
+				{
+					mem.Write<>(entity + offsets::m_clrRender, teamColor);
+				}
 
-					if (entity == localPlayer) //skip local player
-						continue;
-
-					//Basically you only need to take your float value, clamp between 0.0 and 1.0, multiply it by 255 and cast to integer.
-
-					//change float to int
-
-					unsigned char enemyRed = (globals::chamColorEnemy[0] * 255);
-					unsigned char enemyGreen = (globals::chamColorEnemy[1] * 255);
-					unsigned char enemyBlue = (globals::chamColorEnemy[2] * 255);
-					auto enemyColor = Color{ enemyRed,  enemyGreen , enemyBlue };
-
-					unsigned char friendlyRed = (globals::chamColorFriendly[0] * 255);
-					unsigned char friendlyGreen = (globals::chamColorFriendly[1] * 255);
-					unsigned char friendlyBlue = (globals::chamColorFriendly[2] * 255);
-					auto teamColor = Color{ friendlyRed,  friendlyGreen , friendlyBlue };
-
-					//&globals::chamColorEnemy[int(0)] , &globals::chamColorEnemy[1] , &globals::chamColorEnemy[2]};
-					//brightness
-					const auto _this = static_cast<std::uintptr_t>(globals::engineAddress + offsets::model_ambient_min - 0x2c); //cant change single player brightness
-					mem.Write<std::int32_t>(globals::engineAddress + offsets::model_ambient_min, *reinterpret_cast<std::uintptr_t*>(&globals::chamBrightness) ^ _this);
-
-					if (entityTeam != localTeam) //enemy chams
-					{
-						mem.Write<>(entity + offsets::m_clrRender, enemyColor);
-					}
-					else //friendly chams
-					{
-						mem.Write<>(entity + offsets::m_clrRender, teamColor);
-					}
-					
-				}		
+			}
 		}
 	}
 }

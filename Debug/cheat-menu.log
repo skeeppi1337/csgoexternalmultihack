@@ -1,0 +1,12 @@
+﻿  hacks.cpp
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\hacks.cpp(458,28): warning C4244: 'initializing': conversion from 'float' to 'unsigned char', possible loss of data
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\hacks.cpp(459,30): warning C4244: 'initializing': conversion from 'float' to 'unsigned char', possible loss of data
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\hacks.cpp(460,29): warning C4244: 'initializing': conversion from 'float' to 'unsigned char', possible loss of data
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\hacks.cpp(463,31): warning C4244: 'initializing': conversion from 'float' to 'unsigned char', possible loss of data
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\hacks.cpp(464,33): warning C4244: 'initializing': conversion from 'float' to 'unsigned char', possible loss of data
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\hacks.cpp(465,32): warning C4244: 'initializing': conversion from 'float' to 'unsigned char', possible loss of data
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\vector.h(32): warning C4172: returning address of local variable or temporary
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\vector.h(22): warning C4172: returning address of local variable or temporary
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\vector.h(17): warning C4172: returning address of local variable or temporary
+C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\cheat\vector.h(38): warning C4172: returning address of local variable or temporary
+  cheat-menu.vcxproj -> C:\Users\skeep\OneDrive - EDU Espoo\Työpöytä\csgoexternalmultihack-main\Debug\external multicheat.exe

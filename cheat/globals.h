@@ -16,9 +16,12 @@ namespace globals
 	inline float chamBrightness = 0.f;
 	inline bool triggerBot = false;
 	inline int triggerBotDelay = 0;
+	inline bool triggerBotMagnet = false;
+	inline float triggerBotMagnetFov = 0.f;
+	inline float triggerBotMagnetSmooth = 0.f;
 	inline bool aimbot = false;
 	inline float aimbotSmooth = 0.f;
-	inline float aimbotFov = 0.f;
+	inline float aimbotFov = 1.f;
 	inline bool radar= false;
 	inline bool bunnyHop = false;
 	inline bool recoil = false;
